@@ -16,13 +16,21 @@ import {
 import { WordDisplay } from "../components/readster/WordDisplay";
 import { IconPlayerPlay, IconPlayerPause, IconReload } from "@tabler/icons-react";
 
-const TUTORIAL_TEXT = "Rapid Serial Visual Presentation, or RSVP, is a method of displaying information where words are shown one by one in the same position on the screen. This technique eliminates eye movement, allowing the brain to process text at much higher speeds. By focusing your vision on a single fixation point, you can bypass the physical limitations of traditional reading and unlock your mind's true potential for rapid information consumption.";
+const TUTORIAL_TEXT = "Hey! Welcome to Readster. Did you know that your eyes are actually the biggest bottleneck to your reading speed? Right now, we're moving slowly, at about 100 words per minute. This is how most people read, word by word, jumping across the page. But watch what happens as we pick up the pace. Your brain doesn't need your eyes to move to understand. It just needs the information. Can you feel your focus sharpening? No more distractions, no more backtracking. Just pure data flowing directly into your mind. We are now hitting 300 words per minute... and now 400! Look at you! You're reading faster than you ever thought possible, and you're still catching every single detail. This is the power of RSVP. This is the future of reading. Ready to try it with your own text?";
 
 export function LearnSciencePage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const words = TUTORIAL_TEXT.split(/\s+/);
-    const intervalMs = 200; // 300 WPM
+    
+    // Dynamic Speed Logic
+    const startWpm = 100;
+    const endWpm = 450;
+    const currentWpm = Math.min(
+        endWpm,
+        startWpm + (endWpm - startWpm) * (currentIndex / Math.max(1, words.length - 1))
+    );
+    const intervalMs = 60000 / currentWpm;
 
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
@@ -36,7 +44,7 @@ export function LearnSciencePage() {
         return () => {
             if (timer) clearTimeout(timer);
         };
-    }, [isPlaying, currentIndex, words.length]);
+    }, [isPlaying, currentIndex, words.length, intervalMs]);
 
     return (
         <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 relative overflow-x-hidden">
@@ -98,16 +106,22 @@ export function LearnSciencePage() {
                             </div>
                         </div>
 
-                        <div className="flex-[2] w-full h-80 bg-background border border-primary/10 flex items-center justify-center relative overflow-hidden group">
+                        <div className="flex-[2] w-full h-80 bg-background border border-primary/10 flex flex-col items-center justify-center relative overflow-hidden group">
                             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
                             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
                             
                             {currentIndex < words.length ? (
-                                <WordDisplay 
-                                    word={words[currentIndex]} 
-                                    fontSize="text-5xl" 
-                                    spotColor="text-primary"
-                                />
+                                <>
+                                    <WordDisplay 
+                                        word={words[currentIndex]} 
+                                        fontSize="text-5xl" 
+                                        spotColor="text-primary"
+                                    />
+                                    <div className="absolute bottom-6 flex flex-col items-center gap-1 animate-in fade-in duration-500">
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Current Speed</div>
+                                        <div className="text-xl font-mono font-bold text-primary">{Math.round(currentWpm)} WPM</div>
+                                    </div>
+                                </>
                             ) : (
                                 <div className="text-center space-y-4 animate-in zoom-in-95 duration-300">
                                     <p className="text-xl font-medium text-muted-foreground">Demo Complete</p>
