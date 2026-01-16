@@ -110,6 +110,10 @@ export function Reader() {
     setCurrentIndex(0);
   };
 
+  const handleClear = () => {
+    setInputText("");
+  };
+
   const handleRewind = () => {
       setCurrentIndex(prev => Math.max(0, prev - 10));
   };
@@ -425,7 +429,15 @@ export function Reader() {
           />
           <div className="h-px w-full bg-gradient-to-r from-transparent via-border/60 to-transparent shrink-0" />
         </CardContent>
-        <CardFooter className="flex-none flex justify-end py-4 px-6">
+        <CardFooter className="flex-none flex justify-end gap-3 py-4 px-6">
+          <Button 
+            variant="ghost" 
+            onClick={handleClear}
+            className="rounded-none px-6 text-muted-foreground hover:text-foreground transition-all"
+            disabled={!inputText.trim()}
+          >
+            Clear
+          </Button>
           <Button 
             size="lg" 
             onClick={handleStart} 
