@@ -36,7 +36,7 @@ export function WordDisplay({ word, className }: WordDisplayProps) {
   const right = word.slice(pivotIndex + 1);
 
   return (
-    <div className={cn("flex items-center justify-center font-mono text-6xl font-medium tracking-tight h-32 select-none", className)}>
+    <div className={cn("w-full flex items-center justify-center font-mono text-6xl font-medium tracking-tight h-32 select-none", className)}>
       <div className="flex items-baseline w-full">
         {/* Left side - aligned to the right of this container */}
         <div className="flex-1 text-right text-foreground/80">
@@ -44,11 +44,11 @@ export function WordDisplay({ word, className }: WordDisplayProps) {
         </div>
         
         {/* Pivot character - centered, highlighted */}
-        <div className="text-red-500 font-bold mx-[1px] relative">
+        <div className="text-red-500 font-bold mx-0 relative px-1">
            {/* Top and bottom markers for extra fixation aid */}
-           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-[2px] h-3 bg-red-200/50 rounded-full"></div>
+           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-[3px] h-3 bg-red-500/50 rounded-none"></div>
            {pivotChar}
-           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[2px] h-3 bg-red-200/50 rounded-full"></div>
+           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[3px] h-3 bg-red-500/50 rounded-none"></div>
         </div>
 
         {/* Right side - aligned to the left of this container */}
