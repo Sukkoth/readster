@@ -39,7 +39,7 @@ export function Reader() {
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Settings
-  const [wpm, setWpm] = useState(300);
+  const [wpm, setWpm] = useState(270);
   const [chunkSize, setChunkSize] = useState(1);
   const [fontSize, setFontSize] = useState("text-6xl");
   const [spotColor, setSpotColor] = useState("text-red-500");
