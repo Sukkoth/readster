@@ -113,6 +113,8 @@ export function Reader() {
           handleRewind();
       } else if (e.code === 'ArrowRight') {
           handleForward();
+      } else if (e.code === 'Escape') {
+          setIsPlaying(false);
       }
   };
 
@@ -129,14 +131,20 @@ export function Reader() {
     return (
       <div 
         ref={containerRef}
-        className="flex flex-col items-center justify-center min-h-[60vh] outline-none animate-in fade-in duration-500 ease-out" 
+        className={cn(
+            "fixed inset-0 z-50 bg-background outline-none animate-in fade-in duration-500 ease-out overflow-hidden flex items-center justify-center",
+            isReadMode ? "opacity-100" : "opacity-0"
+        )}
         onKeyDown={onKeyDown}
         tabIndex={0}
       >
-        <div className="w-full max-w-5xl mx-auto space-y-12">
-            {/* Header / Top Controls */}
-           <div className="flex justify-between items-start text-muted-foreground/60 transition-colors px-4">
-               <div className="flex flex-col gap-2">
+        {/* Header / Top Controls - Absolutely Positioned */}
+        <div className={cn(
+            "absolute top-12 left-0 right-0 z-20 transition-all duration-500 px-8 mx-auto max-w-5xl w-full",
+            isPlaying ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100 translate-y-0 text-muted-foreground/60"
+        )}>
+            <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-2">
                     <Button variant="ghost" size="sm" onClick={handleStop} className="gap-2 -ml-2 rounded-none hover:bg-secondary/80 self-start">
                         <IconArrowLeft size={18} /> Back
                     </Button>
@@ -148,24 +156,23 @@ export function Reader() {
                             <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }} />
                         </div>
                     </div>
-               </div>
+                </div>
 
-               <div className="flex flex-col items-end gap-2 relative">
-                   <Button 
+                <div className="flex flex-col items-end gap-2 relative">
+                    <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={() => setShowSettings(!showSettings)}
                         className={cn("rounded-none transition-all", showSettings && "bg-secondary text-foreground")}
                     >
-                       <IconSettings size={20} />
-                   </Button>
-                   
-                   {/* Inline Settings Panel */}
-                   {showSettings && (
-                       <div 
-                        ref={settingsRef}
-                        className="absolute top-12 right-0 z-50 p-6 bg-card/95 backdrop-blur-xl border border-border mt-2 w-80 shadow-2xl space-y-6 animate-in slide-in-from-top-2 duration-200"
-                       >
+                        <IconSettings size={20} />
+                    </Button>
+                    
+                    {showSettings && (
+                        <div 
+                            ref={settingsRef}
+                            className="absolute top-12 right-0 z-50 p-6 bg-card/95 backdrop-blur-xl border border-border mt-2 w-80 shadow-2xl space-y-6 animate-in slide-in-from-top-2 duration-200"
+                        >
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Font Size</label>
@@ -213,57 +220,63 @@ export function Reader() {
                                     />
                                 </div>
                             </div>
-                       </div>
-                   )}
-               </div>
-           </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
 
-           {/* Word Display with Context */}
-           <div className="py-12 relative flex flex-col items-center justify-center min-h-[400px]">
-               {!isPlaying && currentIndex < words.length && (
-                   <div className="absolute top-0 w-full max-w-2xl px-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
-                      <p className="text-lg leading-relaxed text-muted-foreground/40 font-light select-none italic">
+        {/* Word Display Area - Mathematically Centered in Viewport */}
+        <div className="relative w-full max-w-5xl h-screen flex flex-col items-center justify-center">
+            {/* Context Text - Above */}
+            {!isPlaying && currentIndex < words.length && (
+                <div className="absolute top-1/2 -translate-y-32 w-full max-w-2xl px-8 text-center animate-in fade-in duration-500">
+                    <p className="text-lg leading-relaxed text-muted-foreground/30 font-light select-none italic line-clamp-2">
                         {words.slice(Math.max(0, currentIndex - 20), currentIndex).join(" ")}
-                      </p>
-                   </div>
-               )}
+                    </p>
+                </div>
+            )}
 
-               <div className="relative w-full">
+            <div className="relative z-10 w-full">
                 {currentIndex < words.length ? (
                     <WordDisplay 
-                            word={currentChunk} 
-                            fontSize={fontSize}
-                            spotColor={spotColor}
-                        />
+                        word={currentChunk} 
+                        fontSize={fontSize}
+                        spotColor={spotColor}
+                    />
                 ) : (
                     <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
                         <span className="text-3xl font-light text-muted-foreground tracking-tight">Finished</span>
-                            <Button 
-                                variant="outline" 
-                                size="lg"
-                                onClick={() => setCurrentIndex(0)}
-                                className="rounded-none px-8 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
-                            >
-                                <IconReload className="mr-2 h-4 w-4" /> Restart
-                            </Button>
+                        <Button 
+                            variant="outline" 
+                            size="lg"
+                            onClick={() => setCurrentIndex(0)}
+                            className="rounded-none px-8 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                        >
+                            <IconReload className="mr-2 h-4 w-4" /> Restart
+                        </Button>
                     </div>
                 )}
-               </div>
+            </div>
 
-               {!isPlaying && currentIndex < words.length && (
-                   <div className="absolute bottom-0 w-full max-w-2xl px-8 text-center animate-in fade-in slide-in-from-top-2 duration-500">
-                      <p className="text-lg leading-relaxed text-muted-foreground/40 font-light select-none italic">
+            {/* Context Text - Below */}
+            {!isPlaying && currentIndex < words.length && (
+                <div className="absolute top-1/2 translate-y-24 w-full max-w-2xl px-8 text-center animate-in fade-in duration-500">
+                    <p className="text-lg leading-relaxed text-muted-foreground/30 font-light select-none italic line-clamp-2">
                         {words.slice(currentIndex + chunkSize, currentIndex + chunkSize + 20).join(" ")}
-                      </p>
-                   </div>
-               )}
-           </div>
+                    </p>
+                </div>
+            )}
+        </div>
 
-           {/* Bottom Controls */}
-            <div className="flex flex-col items-center gap-8 max-w-2xl mx-auto w-full px-8">
-                
+        {/* Bottom Controls - Absolutely Positioned */}
+        <div className={cn(
+            "absolute bottom-20 left-0 right-0 z-20 transition-all duration-500 px-8 mx-auto max-w-2xl w-full",
+            isPlaying ? "opacity-0 pointer-events-none translate-y-4" : "opacity-100 translate-y-0"
+        )}>
+            <div className="flex flex-col items-center gap-8">
                 {/* WPM Slider */}
-                 <div className="w-full space-y-3">
+                <div className="w-full space-y-3">
                     <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
                         <span>Speed</span>
                         <span>{wpm} WPM</span>
@@ -274,8 +287,8 @@ export function Reader() {
                         max={1000} 
                         step={10} 
                         onValueChange={(val) => {
-                             const value = Array.isArray(val) ? val[0] : val;
-                             setWpm(value);
+                                const value = Array.isArray(val) ? val[0] : val;
+                                setWpm(value);
                         }}
                         className="cursor-pointer"
                     />
@@ -283,7 +296,7 @@ export function Reader() {
 
                 {/* Progress Scrubber */}
                 <div className="w-full space-y-3">
-                     <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                    <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
                         <span>Progress</span>
                         <span>{Math.round(progressPercent)}%</span>
                     </div>
@@ -295,13 +308,13 @@ export function Reader() {
                         onValueChange={(val) => {
                             const value = Array.isArray(val) ? val[0] : val;
                             setCurrentIndex(value);
-                            setIsPlaying(false); // Pause when scrubbing
+                            setIsPlaying(false); 
                         }}
                     />
                 </div>
 
                 {/* Playback Controls */}
-                <div className="flex items-center gap-6 pt-4">
+                <div className="flex items-center gap-6">
                     <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 hover:bg-secondary/50" onClick={handleRewind}>
                         <IconPlayerTrackPrev size={24} stroke={1.5} />
                     </Button>
@@ -325,7 +338,7 @@ export function Reader() {
                 </div>
                 
                 <p className="text-center text-[10px] text-muted-foreground/30 font-medium tracking-widest uppercase">
-                    Space to Play • Arrows to Seek
+                    Space/Esc to Play/Pause • Arrows to Seek
                 </p>
             </div>
         </div>
