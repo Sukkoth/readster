@@ -52,8 +52,8 @@ export function WordDisplay({ word, className, spotColor = "text-red-500", fontS
   const bgColorClass = spotColor.replace("text-", "bg-");
 
   return (
-    <div className={cn("w-full flex items-center justify-center font-mono font-medium tracking-tight h-32 select-none", fontSize, className)}>
-      <div className="flex items-baseline w-full">
+    <div className={cn("w-full flex items-center justify-center h-48 select-none", className)}>
+      <div className={cn("flex items-baseline w-full font-mono font-medium tracking-tight", fontSize)}>
         {/* Left side - aligned to the right of this container */}
         <div className="flex-1 text-right text-foreground/80 whitespace-pre">
           {left}

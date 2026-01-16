@@ -44,6 +44,9 @@ export function Reader() {
   const [fontSize, setFontSize] = useState("text-6xl");
   const [spotColor, setSpotColor] = useState("text-red-500");
   const [showSettings, setShowSettings] = useState(false);
+  const [hideTopItems, setHideTopItems] = useState(true);
+  const [hideSpeedProgress, setHideSpeedProgress] = useState(true);
+  const [hideControls, setHideControls] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -53,9 +56,19 @@ export function Reader() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setShowSettings(false);
+      const target = event.target as HTMLElement;
+      // If click is inside the settings container, do nothing
+      if (settingsRef.current && settingsRef.current.contains(target)) {
+        return;
       }
+      
+      // If click is on a portaled element (like Select content), do nothing
+      // Radix UI SelectContent/PopoverContent usually sit in a portal at the body level
+      if (target.closest('[data-radix-portal]') || target.closest('[role="listbox"]')) {
+        return;
+      }
+
+      setShowSettings(false);
     };
     if (showSettings) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -132,7 +145,7 @@ export function Reader() {
       <div 
         ref={containerRef}
         className={cn(
-            "fixed inset-0 z-50 bg-background outline-none animate-in fade-in duration-500 ease-out overflow-hidden flex items-center justify-center",
+            "fixed  inset-0 z-50 bg-background  outline-none animate-in fade-in duration-500 ease-out overflow-hidden flex items-center justify-center",
             isReadMode ? "opacity-100" : "opacity-0"
         )}
         onKeyDown={onKeyDown}
@@ -141,7 +154,7 @@ export function Reader() {
         {/* Header / Top Controls - Absolutely Positioned */}
         <div className={cn(
             "absolute top-12 left-0 right-0 z-20 transition-all duration-500 px-8 mx-auto max-w-5xl w-full",
-            isPlaying ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100 translate-y-0 text-muted-foreground/60"
+            (isPlaying && hideTopItems) ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100 translate-y-0 text-muted-foreground/60"
         )}>
             <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-2">
@@ -219,6 +232,40 @@ export function Reader() {
                                         className="py-2"
                                     />
                                 </div>
+
+                                <div className="pt-2 space-y-3">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Hide during reading</label>
+                                    <div className="flex items-center justify-between">
+                                        <label htmlFor="hide-top" className="text-sm cursor-pointer select-none">Top Items</label>
+                                        <input 
+                                            id="hide-top"
+                                            type="checkbox" 
+                                            checked={hideTopItems} 
+                                            onChange={(e) => setHideTopItems(e.target.checked)}
+                                            className="w-4 h-4 rounded-none border-primary accent-primary cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <label htmlFor="hide-speed" className="text-sm cursor-pointer select-none">Speed & Progress</label>
+                                        <input 
+                                            id="hide-speed"
+                                            type="checkbox" 
+                                            checked={hideSpeedProgress} 
+                                            onChange={(e) => setHideSpeedProgress(e.target.checked)}
+                                            className="w-4 h-4 rounded-none border-primary accent-primary cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <label htmlFor="hide-controls" className="text-sm cursor-pointer select-none">Navigation Controls</label>
+                                        <input 
+                                            id="hide-controls"
+                                            type="checkbox" 
+                                            checked={hideControls} 
+                                            onChange={(e) => setHideControls(e.target.checked)}
+                                            className="w-4 h-4 rounded-none border-primary accent-primary cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -227,7 +274,7 @@ export function Reader() {
         </div>
 
         {/* Word Display Area - Mathematically Centered in Viewport */}
-        <div className="relative w-full max-w-5xl h-screen flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-5xl h-screen flex flex-col items-center justify-center mb-16">
             {/* Context Text - Above */}
             {!isPlaying && currentIndex < words.length && (
                 <div className="absolute top-1/2 -translate-y-32 w-full max-w-2xl px-8 text-center animate-in fade-in duration-500">
@@ -272,11 +319,14 @@ export function Reader() {
         {/* Bottom Controls - Absolutely Positioned */}
         <div className={cn(
             "absolute bottom-20 left-0 right-0 z-20 transition-all duration-500 px-8 mx-auto max-w-2xl w-full",
-            isPlaying ? "opacity-0 pointer-events-none translate-y-4" : "opacity-100 translate-y-0"
+            isPlaying ? "translate-y-4" : "translate-y-0"
         )}>
             <div className="flex flex-col items-center gap-8">
                 {/* WPM Slider */}
-                <div className="w-full space-y-3">
+                <div className={cn(
+                    "w-full space-y-3 transition-opacity duration-500",
+                    (isPlaying && hideSpeedProgress) ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}>
                     <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
                         <span>Speed</span>
                         <span>{wpm} WPM</span>
@@ -295,7 +345,10 @@ export function Reader() {
                 </div>
 
                 {/* Progress Scrubber */}
-                <div className="w-full space-y-3">
+                <div className={cn(
+                    "w-full space-y-3 transition-opacity duration-500",
+                    (isPlaying && hideSpeedProgress) ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}>
                     <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
                         <span>Progress</span>
                         <span>{Math.round(progressPercent)}%</span>
@@ -314,7 +367,10 @@ export function Reader() {
                 </div>
 
                 {/* Playback Controls */}
-                <div className="flex items-center gap-6">
+                <div className={cn(
+                    "flex items-center gap-6 transition-opacity duration-500",
+                    (isPlaying && hideControls) ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}>
                     <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 hover:bg-secondary/50" onClick={handleRewind}>
                         <IconPlayerTrackPrev size={24} stroke={1.5} />
                     </Button>
@@ -337,7 +393,10 @@ export function Reader() {
                     </Button>
                 </div>
                 
-                <p className="text-center text-[10px] text-muted-foreground/30 font-medium tracking-widest uppercase">
+                <p className={cn(
+                    "text-center text-[10px] text-muted-foreground/30 font-medium tracking-widest uppercase transition-opacity duration-500",
+                    (isPlaying && (hideTopItems || hideSpeedProgress || hideControls)) ? "opacity-0" : "opacity-100"
+                )}>
                     Space/Esc to Play/Pause • Arrows to Seek
                 </p>
             </div>
