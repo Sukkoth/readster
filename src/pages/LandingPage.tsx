@@ -66,6 +66,7 @@ export function LandingPage() {
             <Button 
               size="lg"
               variant="outline"
+              onClick={() => navigate("/learn-science")}
               className="text-base h-16 px-10 rounded-none font-semibold border-2 border-primary/20 hover:bg-primary/5 transition-all"
             >
               Learn the science
