@@ -19,17 +19,26 @@ export function WordDisplay({ word, className, spotColor = "text-red-500", fontS
     const len = w.length;
     if (len === 1) return 0;
     
+    let pivot = 0;
     // For single words, we use the standard ORP logic
     if (!w.includes(' ')) {
-        if (len < 2) return 0;
-        if (len < 6) return 1;
-        if (len < 10) return 2;
-        if (len < 14) return 3;
-        return 4;
+        if (len < 6) pivot = 1;
+        else if (len < 10) pivot = 2;
+        else if (len < 14) pivot = 3;
+        else pivot = 4;
+    } else {
+        // For multi-word chunks, we try to center roughly
+        pivot = Math.floor((len - 1) / 2);
     }
 
-    // For multi-word chunks, we try to center roughly
-    return Math.floor((len - 1) / 2);
+    // Fix: Ensure we don't pivot on a space
+    if (w[pivot] === ' ') {
+        // Try left then right
+        if (pivot > 0 && w[pivot - 1] !== ' ') pivot--;
+        else if (pivot < len - 1 && w[pivot + 1] !== ' ') pivot++;
+    }
+
+    return pivot;
   };
 
   const pivotIndex = getPivotIndex(word);

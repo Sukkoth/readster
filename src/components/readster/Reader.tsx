@@ -46,15 +46,24 @@ export function Reader() {
   const [showSettings, setShowSettings] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
-  // Calculate actual delay based on WPM and chunk size
-  // WPM is words per minute.
-  // if chunkSize is 2, we show 2 words at a time.
-  // Does WPM mean "single words per minute" or "flashes per minute"?
-  // Usually WPM is text processed speed. So if 300 WPM, that's 300 words passed in a minute.
-  // If we show 5 words at a time, we hold the frame 5x longer.
-  // Delay = (60000 / WPM) * ChunkSize
+  // WPM to Milliseconds conversion
   const intervalMs = (60000 / wpm) * chunkSize;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setShowSettings(false);
+      }
+    };
+    if (showSettings) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSettings]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -141,7 +150,7 @@ export function Reader() {
                     </div>
                </div>
 
-               <div className="flex flex-col items-end gap-2">
+               <div className="flex flex-col items-end gap-2 relative">
                    <Button 
                         variant="ghost" 
                         size="icon" 
@@ -153,7 +162,10 @@ export function Reader() {
                    
                    {/* Inline Settings Panel */}
                    {showSettings && (
-                       <div className="absolute top-20 right-4 z-50 p-6 bg-card/95 backdrop-blur-xl border border-border mt-2 w-80 shadow-2xl space-y-6 animate-in slide-in-from-top-2 duration-200">
+                       <div 
+                        ref={settingsRef}
+                        className="absolute top-12 right-0 z-50 p-6 bg-card/95 backdrop-blur-xl border border-border mt-2 w-80 shadow-2xl space-y-6 animate-in slide-in-from-top-2 duration-200"
+                       >
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Font Size</label>
@@ -206,25 +218,43 @@ export function Reader() {
                </div>
            </div>
 
-           {/* Word Display */}
-           <div className="py-12 relative flex justify-center min-h-[240px] items-center">
-               {currentIndex < words.length ? (
-                   <WordDisplay 
-                        word={currentChunk} 
-                        fontSize={fontSize}
-                        spotColor={spotColor}
-                    />
-               ) : (
-                   <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
-                       <span className="text-3xl font-light text-muted-foreground tracking-tight">Finished</span>
-                        <Button 
-                            variant="outline" 
-                            size="lg"
-                            onClick={() => setCurrentIndex(0)}
-                            className="rounded-none px-8 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
-                        >
-                            <IconReload className="mr-2 h-4 w-4" /> Restart
-                        </Button>
+           {/* Word Display with Context */}
+           <div className="py-12 relative flex flex-col items-center justify-center min-h-[400px]">
+               {!isPlaying && currentIndex < words.length && (
+                   <div className="absolute top-0 w-full max-w-2xl px-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      <p className="text-lg leading-relaxed text-muted-foreground/40 font-light select-none italic">
+                        {words.slice(Math.max(0, currentIndex - 20), currentIndex).join(" ")}
+                      </p>
+                   </div>
+               )}
+
+               <div className="relative w-full">
+                {currentIndex < words.length ? (
+                    <WordDisplay 
+                            word={currentChunk} 
+                            fontSize={fontSize}
+                            spotColor={spotColor}
+                        />
+                ) : (
+                    <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
+                        <span className="text-3xl font-light text-muted-foreground tracking-tight">Finished</span>
+                            <Button 
+                                variant="outline" 
+                                size="lg"
+                                onClick={() => setCurrentIndex(0)}
+                                className="rounded-none px-8 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                            >
+                                <IconReload className="mr-2 h-4 w-4" /> Restart
+                            </Button>
+                    </div>
+                )}
+               </div>
+
+               {!isPlaying && currentIndex < words.length && (
+                   <div className="absolute bottom-0 w-full max-w-2xl px-8 text-center animate-in fade-in slide-in-from-top-2 duration-500">
+                      <p className="text-lg leading-relaxed text-muted-foreground/40 font-light select-none italic">
+                        {words.slice(currentIndex + chunkSize, currentIndex + chunkSize + 20).join(" ")}
+                      </p>
                    </div>
                )}
            </div>
