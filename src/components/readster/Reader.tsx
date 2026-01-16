@@ -3,7 +3,33 @@ import { WordDisplay } from "./WordDisplay";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconPlayerPlay, IconPlayerPause, IconReload, IconArrowLeft } from "@tabler/icons-react";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+    IconPlayerPlay, 
+    IconPlayerPause, 
+    IconReload, 
+    IconArrowLeft, 
+    IconPlayerTrackNext, 
+    IconPlayerTrackPrev,
+    IconSettings
+} from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+
+const FONT_SIZES = {
+    "Small": "text-4xl",
+    "Medium": "text-6xl",
+    "Large": "text-8xl",
+    "Extra Large": "text-9xl"
+};
+
+const SPOT_COLORS = {
+    "Red": "text-red-500",
+    "Blue": "text-blue-500",
+    "Green": "text-green-500",
+    "Yellow": "text-yellow-500",
+    "Purple": "text-purple-500"
+};
 
 export function Reader() {
   const [inputText, setInputText] = useState("");
@@ -11,20 +37,31 @@ export function Reader() {
   const [isReadMode, setIsReadMode] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [wpm] = useState(300);
+  
+  // Settings
+  const [wpm, setWpm] = useState(300);
+  const [chunkSize, setChunkSize] = useState(1);
+  const [fontSize, setFontSize] = useState("text-6xl");
+  const [spotColor, setSpotColor] = useState("text-red-500");
+  const [showSettings, setShowSettings] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // WPM to Milliseconds conversion
-  // 300 wpm = 5 words per second = 200ms per word
-  const intervalMs = 60000 / wpm;
+  // Calculate actual delay based on WPM and chunk size
+  // WPM is words per minute.
+  // if chunkSize is 2, we show 2 words at a time.
+  // Does WPM mean "single words per minute" or "flashes per minute"?
+  // Usually WPM is text processed speed. So if 300 WPM, that's 300 words passed in a minute.
+  // If we show 5 words at a time, we hold the frame 5x longer.
+  // Delay = (60000 / WPM) * ChunkSize
+  const intervalMs = (60000 / wpm) * chunkSize;
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     if (isPlaying && isReadMode && currentIndex < words.length) {
       timer = setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
+        setCurrentIndex((prev) => prev + chunkSize);
       }, intervalMs);
     } else if (currentIndex >= words.length) {
       setIsPlaying(false);
@@ -33,16 +70,16 @@ export function Reader() {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isPlaying, isReadMode, currentIndex, words.length, intervalMs]);
+  }, [isPlaying, isReadMode, currentIndex, words.length, intervalMs, chunkSize]);
 
   const handleStart = () => {
     if (!inputText.trim()) return;
-    // Simple split by whitespace
     const splitWords = inputText.trim().split(/\s+/);
     setWords(splitWords);
     setCurrentIndex(0);
     setIsReadMode(true);
-    setIsPlaying(true);
+    // Don't auto-start, let user settle
+    setIsPlaying(false);
   };
 
   const handleStop = () => {
@@ -51,10 +88,22 @@ export function Reader() {
     setCurrentIndex(0);
   };
 
+  const handleRewind = () => {
+      setCurrentIndex(prev => Math.max(0, prev - 10));
+  };
+
+  const handleForward = () => {
+      setCurrentIndex(prev => Math.min(words.length - 1, prev + 10));
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
       if (e.code === 'Space') {
           e.preventDefault();
           setIsPlaying(prev => !prev);
+      } else if (e.code === 'ArrowLeft') {
+          handleRewind();
+      } else if (e.code === 'ArrowRight') {
+          handleForward();
       }
   };
 
@@ -64,6 +113,9 @@ export function Reader() {
       }
   }, [isReadMode]);
 
+  const currentChunk = words.slice(currentIndex, currentIndex + chunkSize).join(" ");
+  const progressPercent = Math.min(100, (currentIndex / words.length) * 100);
+
   if (isReadMode) {
     return (
       <div 
@@ -72,22 +124,96 @@ export function Reader() {
         onKeyDown={onKeyDown}
         tabIndex={0}
       >
-        <div className="w-full max-w-4xl mx-auto space-y-24">
-           {/* Top bar */}
-           <div className="flex justify-between items-center text-muted-foreground/60 hover:text-foreground transition-colors px-4">
-               <Button variant="ghost" size="sm" onClick={handleStop} className="gap-2 -ml-2 rounded-none hover:bg-secondary/80">
-                   <IconArrowLeft size={18} /> Back
-               </Button>
-               <div className="flex gap-6 text-sm font-medium tracking-wide">
-                   <span className="tabular-nums">{currentIndex + 1} <span className="text-muted-foreground/40">/</span> {words.length}</span>
-                   <span>{wpm} <span className="text-xs uppercase tracking-wider text-muted-foreground/60">WPM</span></span>
+        <div className="w-full max-w-5xl mx-auto space-y-12">
+            {/* Header / Top Controls */}
+           <div className="flex justify-between items-start text-muted-foreground/60 transition-colors px-4">
+               <div className="flex flex-col gap-2">
+                    <Button variant="ghost" size="sm" onClick={handleStop} className="gap-2 -ml-2 rounded-none hover:bg-secondary/80 self-start">
+                        <IconArrowLeft size={18} /> Back
+                    </Button>
+                    <div className="flex flex-col gap-0.5 mt-2">
+                        <span className="text-sm font-medium tracking-wide">
+                             <span className="text-foreground">{currentIndex}</span> / {words.length} <span className="text-xs">words</span>
+                        </span>
+                        <div className="h-1 w-32 bg-secondary rounded-none overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }} />
+                        </div>
+                    </div>
+               </div>
+
+               <div className="flex flex-col items-end gap-2">
+                   <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setShowSettings(!showSettings)}
+                        className={cn("rounded-none transition-all", showSettings && "bg-secondary text-foreground")}
+                    >
+                       <IconSettings size={20} />
+                   </Button>
+                   
+                   {/* Inline Settings Panel */}
+                   {showSettings && (
+                       <div className="absolute top-20 right-4 z-50 p-6 bg-card/95 backdrop-blur-xl border border-border mt-2 w-80 shadow-2xl space-y-6 animate-in slide-in-from-top-2 duration-200">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Font Size</label>
+                                    <Select value={fontSize} onValueChange={(val) => val && setFontSize(val)}>
+                                        <SelectTrigger className="rounded-none w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(FONT_SIZES).map(([label, cls]) => (
+                                                <SelectItem key={cls} value={cls}>{label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Spot Color</label>
+                                    <Select value={spotColor} onValueChange={(val) => val && setSpotColor(val)}>
+                                        <SelectTrigger className="rounded-none w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(SPOT_COLORS).map(([label, cls]) => (
+                                                <SelectItem key={cls} value={cls}>
+                                                    <span className="flex items-center gap-2">
+                                                        <div className={cn("w-3 h-3 rounded-none", cls.replace("text-", "bg-"))} />
+                                                        {label}
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Chunk Size ({chunkSize})</label>
+                                    <Slider 
+                                        value={[chunkSize]} 
+                                        min={1} 
+                                        max={5} 
+                                        step={1} 
+                                        onValueChange={(val) => {
+                                            const value = Array.isArray(val) ? val[0] : val;
+                                            setChunkSize(value);
+                                        }} 
+                                        className="py-2"
+                                    />
+                                </div>
+                            </div>
+                       </div>
+                   )}
                </div>
            </div>
 
            {/* Word Display */}
-           <div className="py-20 relative flex justify-center min-h-[200px] items-center">
+           <div className="py-12 relative flex justify-center min-h-[240px] items-center">
                {currentIndex < words.length ? (
-                   <WordDisplay word={words[currentIndex]} />
+                   <WordDisplay 
+                        word={currentChunk} 
+                        fontSize={fontSize}
+                        spotColor={spotColor}
+                    />
                ) : (
                    <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
                        <span className="text-3xl font-light text-muted-foreground tracking-tight">Finished</span>
@@ -103,23 +229,73 @@ export function Reader() {
                )}
            </div>
 
-           {/* Controls */}
-            <div className="flex flex-col items-center gap-6">
-                <Button 
-                    size="lg" 
-                    variant="outline"
-                    className="h-16 w-16 rounded-none p-0 border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/5 transition-all hover:scale-105 active:scale-95"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                >
-                    {isPlaying ? (
-                        <IconPlayerPause className="h-6 w-6 fill-current" />
-                    ) : (
-                        <IconPlayerPlay className="h-6 w-6 ml-1 fill-current" />
-                    )}
-                </Button>
+           {/* Bottom Controls */}
+            <div className="flex flex-col items-center gap-8 max-w-2xl mx-auto w-full px-8">
                 
-                <p className="text-center text-xs text-muted-foreground/40 font-medium tracking-widest uppercase">
-                    Space to {isPlaying ? 'pause' : 'play'}
+                {/* WPM Slider */}
+                 <div className="w-full space-y-3">
+                    <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                        <span>Speed</span>
+                        <span>{wpm} WPM</span>
+                    </div>
+                    <Slider 
+                        value={[wpm]} 
+                        min={100} 
+                        max={1000} 
+                        step={10} 
+                        onValueChange={(val) => {
+                             const value = Array.isArray(val) ? val[0] : val;
+                             setWpm(value);
+                        }}
+                        className="cursor-pointer"
+                    />
+                </div>
+
+                {/* Progress Scrubber */}
+                <div className="w-full space-y-3">
+                     <div className="flex justify-between text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                        <span>Progress</span>
+                        <span>{Math.round(progressPercent)}%</span>
+                    </div>
+                    <Slider 
+                        value={[currentIndex]} 
+                        min={0} 
+                        max={words.length - 1} 
+                        step={1} 
+                        onValueChange={(val) => {
+                            const value = Array.isArray(val) ? val[0] : val;
+                            setCurrentIndex(value);
+                            setIsPlaying(false); // Pause when scrubbing
+                        }}
+                    />
+                </div>
+
+                {/* Playback Controls */}
+                <div className="flex items-center gap-6 pt-4">
+                    <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 hover:bg-secondary/50" onClick={handleRewind}>
+                        <IconPlayerTrackPrev size={24} stroke={1.5} />
+                    </Button>
+
+                    <Button 
+                        size="lg" 
+                        variant="outline"
+                        className="h-20 w-20 rounded-none p-0 border-2 border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-95"
+                        onClick={() => setIsPlaying(!isPlaying)}
+                    >
+                        {isPlaying ? (
+                            <IconPlayerPause className="h-8 w-8 fill-current" />
+                        ) : (
+                            <IconPlayerPlay className="h-8 w-8 ml-1 fill-current" />
+                        )}
+                    </Button>
+
+                    <Button variant="ghost" size="icon" className="rounded-none h-12 w-12 hover:bg-secondary/50" onClick={handleForward}>
+                        <IconPlayerTrackNext size={24} stroke={1.5} />
+                    </Button>
+                </div>
+                
+                <p className="text-center text-[10px] text-muted-foreground/30 font-medium tracking-widest uppercase">
+                    Space to Play • Arrows to Seek
                 </p>
             </div>
         </div>
@@ -145,7 +321,6 @@ export function Reader() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           />
-          {/* subtle separator line since we removed border from textarea */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-border/60 to-transparent shrink-0" />
         </CardContent>
         <CardFooter className="flex-none flex justify-end py-4 px-6">
