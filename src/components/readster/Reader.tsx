@@ -74,6 +74,10 @@ export function Reader() {
     };
 
     window.addEventListener("message", handleMessage);
+    
+    // Signal to the content script that we are ready to receive data
+    window.postMessage({ type: "READSTER_READY" }, "*");
+    
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 

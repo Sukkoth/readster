@@ -21,7 +21,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     
     // Save to local storage for the content script to pick up
     chrome.storage.local.set({ "readster_pending_data": data }, () => {
-      chrome.tabs.create({ url: READSTER_URL });
+      // Open the /read route specifically so the Reader component is mounted
+      const targetUrl = READSTER_URL.endsWith('/') ? READSTER_URL + 'read' : READSTER_URL + '/read';
+      chrome.tabs.create({ url: targetUrl });
     });
   }
 });

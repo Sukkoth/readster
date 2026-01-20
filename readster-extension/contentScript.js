@@ -24,5 +24,12 @@ function relayPendingData() {
   });
 }
 
-// Run immediately
-relayPendingData();
+// Listen for the app signaling it is ready
+window.addEventListener("message", (event) => {
+  if (event.data?.type === "READSTER_READY") {
+    relayPendingData();
+  }
+});
+
+// Fallback: Check once after a short delay in case the signal was missed
+setTimeout(relayPendingData, 1000);

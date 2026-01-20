@@ -35,7 +35,8 @@
   <p>Highlight any text on a webpage, right-click, and select "Read with Readster" to start reading instantly.</p>
   <a id="open-link" href="#" target="_blank" class="button">Open Readster</a>
   <script>
-    document.getElementById('open-link').href = typeof CONFIG !== 'undefined' ? CONFIG.READSTER_URL : 'http://localhost:5173/read';
+    const baseUrl = typeof CONFIG !== 'undefined' ? CONFIG.READSTER_URL : 'http://localhost:5173';
+    document.getElementById('open-link').href = baseUrl.endsWith('/') ? baseUrl + 'read' : baseUrl + '/read';
   </script>
 </body>
 </html>
