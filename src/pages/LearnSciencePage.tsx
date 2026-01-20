@@ -16,20 +16,33 @@ import {
 import { WordDisplay } from "../components/readster/WordDisplay";
 import { IconPlayerPlay, IconPlayerPause, IconReload } from "@tabler/icons-react";
 
-const TUTORIAL_TEXT = "Hey! Welcome to Readster. Did you know that your eyes are actually the biggest bottleneck to your reading speed? Right now, we're moving slowly, at about 100 words per minute. This is how most people read, word by word, jumping across the page. But watch what happens as we pick up the pace. Your brain doesn't need your eyes to move to understand. It just needs the information. Can you feel your focus sharpening? No more distractions, no more backtracking. Just pure data flowing directly into your mind. We are now hitting 300 words per minute... and now 400! Look at you! You're reading faster than you ever thought possible, and you're still catching every single detail. This is the power of RSVP. This is the future of reading. Ready to try it with your own text?";
+const TUTORIAL_TEXT = "Hey! Welcome to Readster. Did you know that your eyes are actually the biggest bottleneck to your reading speed? Right now, we're moving at a steady pace, about 180 words per minute. This is faster than most people read, but still word by word, jumping across the page. But watch what happens as we pick up the pace and tap into your brain's true potential. Your brain doesn't need your eyes to move to understand. It just needs the information. Can you feel your focus sharpening? No more distractions, no more backtracking. Just pure data flowing directly into your mind. We are now hitting 300 words per minute... and now 400! Look at you! You're reading faster than you ever thought possible. It's intense, right? Now, let's slow down just a bit... to a comfortable cruise. See? When we ease off the peak, it feels effortless. It's fun, it's clear, and you're still taking in information way faster than a normal reader. This is the power of RSVP. It makes understanding things easier because your focus is absolute. Ready to try it with your own text?";
 
 export function LearnSciencePage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const words = TUTORIAL_TEXT.split(/\s+/);
     
-    // Dynamic Speed Logic
-    const startWpm = 100;
-    const endWpm = 450;
-    const currentWpm = Math.min(
-        endWpm,
-        startWpm + (endWpm - startWpm) * (currentIndex / Math.max(1, words.length - 1))
-    );
+    // Multi-phase Speed Logic
+    const getWpmForIndex = (index: number) => {
+        const total = words.length;
+        const p1End = Math.floor(total * 0.12); // Shorter intro phase
+        const p2End = Math.floor(total * 0.60); // Faster acceleration trigger
+        
+        if (index <= p1End) {
+            return 180; // Higher starting WPM for better momentum
+        } else if (index <= p2End) {
+            // Accelerate from 180 to 400
+            const progress = (index - p1End) / (p2End - p1End);
+            return 180 + (400 - 180) * progress;
+        } else {
+            // Decelerate from 400 to 280
+            const progress = (index - p2End) / (total - p2End);
+            return Math.max(280, 400 - (400 - 280) * progress);
+        }
+    };
+
+    const currentWpm = getWpmForIndex(currentIndex);
     const intervalMs = 60000 / currentWpm;
 
     useEffect(() => {
