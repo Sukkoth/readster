@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { WordDisplay } from "./WordDisplay";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,6 +51,35 @@ export function Reader() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+
+  // Handle URL Parameters on mount
+  useEffect(() => {
+    const textParam = searchParams.get("text");
+    if (textParam) {
+      setInputText(decodeURIComponent(textParam));
+    }
+  }, [searchParams]);
+
+  // Handle Messages from Extension Content Script
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from our own extension script
+      if (event.data?.type === "READSTER_TRANSFER") {
+        const { text } = event.data.payload;
+        if (text) {
+          setInputText(text);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    
+    // Signal to the content script that we are ready to receive data
+    window.postMessage({ type: "READSTER_READY" }, "*");
+    
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   // WPM to Milliseconds conversion
   const intervalMs = (60000 / wpm) * chunkSize;
@@ -421,12 +451,14 @@ export function Reader() {
           </p>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 pt-4 px-0 pb-0 overflow-hidden flex flex-col">
-          <Textarea
-            placeholder="Paste your text here to begin..."
-            className="flex-1 w-full h-full resize-none text-lg p-6 bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/40 leading-relaxed font-light overflow-y-auto"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-          />
+          <div className="relative flex-none"> {/* Change to flex-none to let content-sizing work, then cap it */}
+            <Textarea 
+              placeholder="Paste your text here to begin..."
+              className="w-full min-h-[200px] max-h-[60vh] resize-none text-lg p-6 bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/40 leading-relaxed font-light overflow-y-auto"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+            />
+          </div>
           <div className="h-px w-full bg-gradient-to-r from-transparent via-border/60 to-transparent shrink-0" />
         </CardContent>
         <CardFooter className="flex-none flex justify-end gap-3 py-4 px-6">
